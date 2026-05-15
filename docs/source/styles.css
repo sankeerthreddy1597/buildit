@@ -1,0 +1,167 @@
+/* buildit — theme tokens & base */
+:root {
+  --bg: #f7f3ec;
+  --bg-elev: #ffffff;
+  --bg-soft: #efe9de;
+  --fg: #1a1612;
+  --fg-dim: #4a4137;
+  --fg-muted: #8a7e6c;
+  --fg-faint: #b4a896;
+  --border: #e2d8c4;
+  --border-strong: #c9bca2;
+  --accent: #c45a26;        /* rust */
+  --accent-hover: #b04d1e;
+  --accent-soft: #f5e6cf;
+  --accent-faint: #fbf3e7;
+  --ok: #5a8a4a;
+  --warn: #c98b1e;
+  --danger: #b03830;
+  --code-bg: #2a241d;
+  --code-fg: #f0e8da;
+  --shadow-sm: 0 1px 2px rgba(60,40,20,.06), 0 0 0 1px rgba(60,40,20,.04);
+  --shadow-md: 0 4px 16px rgba(60,40,20,.08), 0 0 0 1px rgba(60,40,20,.06);
+  --shadow-lg: 0 12px 40px rgba(60,40,20,.12), 0 0 0 1px rgba(60,40,20,.06);
+}
+
+.theme-dark {
+  --bg: #14110d;
+  --bg-elev: #1d1914;
+  --bg-soft: #1a1612;
+  --fg: #f0e8da;
+  --fg-dim: #c8bea8;
+  --fg-muted: #8a7e6c;
+  --fg-faint: #5a5043;
+  --border: #2a241d;
+  --border-strong: #3a3229;
+  --accent: #e07845;
+  --accent-hover: #ec8855;
+  --accent-soft: #2f231a;
+  --accent-faint: #221a13;
+  --code-bg: #0c0a07;
+  --code-fg: #f0e8da;
+  --shadow-sm: 0 1px 2px rgba(0,0,0,.4), 0 0 0 1px rgba(255,235,200,.04);
+  --shadow-md: 0 4px 16px rgba(0,0,0,.4), 0 0 0 1px rgba(255,235,200,.06);
+  --shadow-lg: 0 12px 40px rgba(0,0,0,.5), 0 0 0 1px rgba(255,235,200,.06);
+}
+
+/* Frame (artboard root) inherits the theme. We apply theme as a class
+   on each frame so the canvas chrome can stay neutral. */
+.frame {
+  font-family: ui-sans-serif, system-ui, -apple-system, "SF Pro Display", "Segoe UI", sans-serif;
+  background: var(--bg);
+  color: var(--fg);
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  position: relative;
+  font-feature-settings: "cv11", "ss01";
+  -webkit-font-smoothing: antialiased;
+}
+
+.serif { font-family: "Instrument Serif", "Times New Roman", serif; font-weight: 400; letter-spacing: -0.01em; }
+.serif-it { font-family: "Instrument Serif", "Times New Roman", serif; font-weight: 400; font-style: italic; }
+.mono { font-family: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace; font-feature-settings: "ss01","ss02","cv11"; }
+.hand { font-family: "Caveat", "Comic Sans MS", cursive; }
+
+/* utility resets per-frame */
+.frame *, .frame *::before, .frame *::after { box-sizing: border-box; }
+.frame button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; padding: 0; }
+.frame input, .frame textarea { font: inherit; color: inherit; background: transparent; border: 0; outline: none; }
+.frame p, .frame h1, .frame h2, .frame h3, .frame h4 { margin: 0; }
+.frame ul, .frame ol { margin: 0; padding: 0; list-style: none; }
+.frame a { color: inherit; text-decoration: none; }
+.frame hr { border: 0; border-top: 1px solid var(--border); margin: 0; }
+
+/* dotted/grid bg helpers */
+.bg-dot { background-image: radial-gradient(var(--border-strong) 1px, transparent 1.2px); background-size: 24px 24px; }
+.bg-grid { background-image:
+  linear-gradient(var(--border) 1px, transparent 1px),
+  linear-gradient(90deg, var(--border) 1px, transparent 1px);
+  background-size: 28px 28px;
+}
+.bg-paper {
+  background-image: repeating-linear-gradient(0deg, transparent 0 27px, var(--border) 27px 28px);
+}
+.bg-noise {
+  background-image:
+    radial-gradient(circle at 20% 10%, var(--accent-faint) 0%, transparent 40%),
+    radial-gradient(circle at 80% 60%, var(--accent-faint) 0%, transparent 35%);
+}
+
+/* common chips/buttons reused inline by screens */
+.chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 4px 10px; border-radius: 999px;
+  font-size: 12px; font-weight: 500;
+  border: 1px solid var(--border-strong); color: var(--fg-dim);
+  background: var(--bg-elev);
+}
+.chip-dot { width: 6px; height: 6px; border-radius: 999px; background: var(--accent); }
+.kbd {
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 11px; padding: 2px 6px; border-radius: 4px;
+  background: var(--bg-elev); border: 1px solid var(--border);
+  color: var(--fg-muted); box-shadow: 0 1px 0 var(--border);
+}
+
+/* paper/folded note for the plan bar variations */
+.note-paper {
+  background: var(--bg-elev);
+  border-radius: 14px;
+  box-shadow: var(--shadow-md);
+}
+.note-paper-warm {
+  background: linear-gradient(180deg, #fef9ed 0%, #fdf1d8 100%);
+  border-radius: 14px;
+  box-shadow: 0 12px 32px rgba(180,120,40,.18), 0 0 0 1px rgba(180,120,40,.12);
+}
+.theme-dark .note-paper-warm {
+  background: linear-gradient(180deg, #2a2218 0%, #221a10 100%);
+  box-shadow: 0 12px 32px rgba(0,0,0,.5), 0 0 0 1px rgba(255,200,140,.12);
+}
+
+/* simple buttons */
+.btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 9px 16px; border-radius: 10px;
+  font-size: 13.5px; font-weight: 550;
+  transition: all .15s;
+}
+.btn-primary { background: var(--accent); color: #fff; }
+.btn-primary:hover { background: var(--accent-hover); }
+.btn-ghost { color: var(--fg-dim); }
+.btn-ghost:hover { background: var(--bg-soft); }
+.btn-outline { border: 1px solid var(--border-strong); color: var(--fg-dim); background: var(--bg-elev); }
+.btn-outline:hover { border-color: var(--fg-muted); }
+
+/* shimmer for loading */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.shimmer {
+  background: linear-gradient(90deg, var(--bg-soft) 0%, var(--bg-elev) 50%, var(--bg-soft) 100%);
+  background-size: 200% 100%;
+  animation: shimmer 2s infinite;
+}
+
+/* pulse dot */
+@keyframes pulse-dot {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.4); opacity: 0.6; }
+}
+.pulse-dot { animation: pulse-dot 1.6s ease-in-out infinite; }
+
+/* typing dots */
+@keyframes blink {
+  0%, 80%, 100% { opacity: 0.2; }
+  40% { opacity: 1; }
+}
+.typing-dot { animation: blink 1.4s infinite both; }
+.typing-dot:nth-child(2) { animation-delay: .2s; }
+.typing-dot:nth-child(3) { animation-delay: .4s; }
+
+/* scrollbar */
+.frame *::-webkit-scrollbar { width: 6px; height: 6px; }
+.frame *::-webkit-scrollbar-track { background: transparent; }
+.frame *::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 999px; }
