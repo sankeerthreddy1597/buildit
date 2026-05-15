@@ -58,7 +58,7 @@
   --font-sans:  ui-sans-serif, system-ui, -apple-system, "SF Pro Display", "Segoe UI", sans-serif;
   --font-serif: var(--font-instrument-serif), "Times New Roman", serif;
   --font-mono:  var(--font-jetbrains-mono), ui-monospace, "SF Mono", Menlo, monospace;
-  --font-hand:  "Caveat", "Comic Sans MS", cursive;
+  --font-hand:  var(--font-caveat), "Caveat", "Comic Sans MS", cursive;
   --font-geist-mono: var(--font-mono);
 
   /* radius scale (px → rem) */
@@ -172,6 +172,26 @@
     -webkit-font-smoothing: antialiased;
     font-feature-settings: "cv11", "ss01";
   }
+}
+
+/* ── Landing utilities ── */
+.bg-noise {
+  background-image:
+    radial-gradient(circle at 20% 10%, var(--brand-faint) 0%, transparent 40%),
+    radial-gradient(circle at 80% 60%, var(--brand-faint) 0%, transparent 35%);
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 500;
+  border: 1px solid var(--bd-strong);
+  color: var(--fg-dim);
+  background: var(--bg-elev);
 }
 
 /* ── Animations ── */
