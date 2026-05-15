@@ -94,7 +94,7 @@ export function PromptInput({
           <button
             type="button"
             onClick={onModelClick}
-            className="inline-flex items-center gap-1.5 text-fg-muted transition-colors hover:text-fg-dim"
+            className="inline-flex items-center gap-1.5 text-fg-muted transition-colors hover:text-fg-dim cursor-pointer"
             style={{
               padding: '5px 10px',
               borderRadius: 8,
