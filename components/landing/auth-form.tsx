@@ -133,28 +133,6 @@ export function AuthForm({ mode }: AuthFormProps) {
             </p>
           </div>
         </div>
-
-        {/* Testimonial */}
-        <div className="text-fg-muted" style={{ fontSize: 12 }}>
-          <span className="text-fg-dim italic">
-            &ldquo;I shipped my MVP in an afternoon — the plan mode was the unlock for me.&rdquo;
-          </span>
-          <div className="flex items-center gap-2 mt-2">
-            <span
-              className="inline-flex items-center justify-center text-white font-semibold shrink-0"
-              style={{
-                width: 22,
-                height: 22,
-                borderRadius: 999,
-                background: '#3a6a8a',
-                fontSize: 9,
-              }}
-            >
-              M
-            </span>
-            <span>Maya R. · founder, Tracklist</span>
-          </div>
-        </div>
       </div>
 
       {/* ── Right form ───────────────────────────────────────────────────── */}

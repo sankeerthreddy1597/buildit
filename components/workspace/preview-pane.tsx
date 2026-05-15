@@ -4,13 +4,67 @@ import { useState } from 'react'
 import { Icon } from '@/components/shared/icons'
 
 interface PreviewPaneProps {
-  previewUrl: string | null
+  previewUrl:    string | null
   projectStatus: string
+  pocHtml?:      string | null
 }
 
-export function PreviewPane({ previewUrl, projectStatus }: PreviewPaneProps) {
+export function PreviewPane({ previewUrl, projectStatus, pocHtml }: PreviewPaneProps) {
   const [iframeKey, setIframeKey] = useState(0)
 
+  // ── PoC HTML preview ─────────────────────────────────────────────────────────
+  if (pocHtml) {
+    return (
+      <div className="flex-1 flex flex-col overflow-hidden" style={{ background: 'var(--bg)' }}>
+        {/* Toolbar */}
+        <div
+          className="flex items-center gap-2 shrink-0"
+          style={{
+            padding: '8px 12px',
+            borderBottom: '1px solid var(--bd)',
+            background: 'var(--bg-elev)',
+          }}
+        >
+          <div
+            className="flex-1 flex items-center gap-2"
+            style={{
+              padding: '0 10px',
+              height: 32,
+              background: 'var(--bg-soft)',
+              border: '1px solid var(--bd)',
+              borderRadius: 8,
+            }}
+          >
+            <Icon name="code" size={12} className="text-fg-faint shrink-0" />
+            <span className="text-fg-muted" style={{ fontSize: 12, fontFamily: 'var(--font-mono)' }}>
+              proof-of-concept · HTML preview
+            </span>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setIframeKey(k => k + 1)}
+            className="inline-flex items-center justify-center text-fg-muted transition-colors hover:text-fg cursor-pointer"
+            style={{ width: 30, height: 30, borderRadius: 7, border: '1px solid var(--bd)' }}
+            title="Refresh preview"
+          >
+            <Icon name="refresh" size={13} />
+          </button>
+        </div>
+
+        {/* srcdoc iframe — allow-scripts only, no same-origin */}
+        <iframe
+          key={iframeKey}
+          srcDoc={pocHtml}
+          className="flex-1 w-full border-0"
+          sandbox="allow-scripts"
+          title="PoC preview"
+        />
+      </div>
+    )
+  }
+
+  // ── No preview yet ────────────────────────────────────────────────────────────
   if (!previewUrl) {
     return (
       <div
@@ -64,6 +118,7 @@ export function PreviewPane({ previewUrl, projectStatus }: PreviewPaneProps) {
     )
   }
 
+  // ── Full-build URL preview ────────────────────────────────────────────────────
   return (
     <div
       className="flex-1 flex flex-col overflow-hidden"
@@ -78,7 +133,6 @@ export function PreviewPane({ previewUrl, projectStatus }: PreviewPaneProps) {
           background: 'var(--bg-elev)',
         }}
       >
-        {/* URL bar */}
         <div
           className="flex-1 flex items-center gap-2 rounded-lg"
           style={{
@@ -98,41 +152,28 @@ export function PreviewPane({ previewUrl, projectStatus }: PreviewPaneProps) {
           </span>
         </div>
 
-        {/* Refresh */}
         <button
           type="button"
           onClick={() => setIframeKey(k => k + 1)}
           className="inline-flex items-center justify-center text-fg-muted transition-colors hover:text-fg cursor-pointer"
-          style={{
-            width: 30,
-            height: 30,
-            borderRadius: 7,
-            border: '1px solid var(--bd)',
-          }}
+          style={{ width: 30, height: 30, borderRadius: 7, border: '1px solid var(--bd)' }}
           title="Refresh preview"
         >
           <Icon name="refresh" size={13} />
         </button>
 
-        {/* Open in new tab */}
         <a
           href={previewUrl}
           target="_blank"
           rel="noopener noreferrer"
           className="inline-flex items-center justify-center text-fg-muted transition-colors hover:text-fg"
-          style={{
-            width: 30,
-            height: 30,
-            borderRadius: 7,
-            border: '1px solid var(--bd)',
-          }}
+          style={{ width: 30, height: 30, borderRadius: 7, border: '1px solid var(--bd)' }}
           title="Open in new tab"
         >
           <Icon name="external" size={13} />
         </a>
       </div>
 
-      {/* iframe */}
       <iframe
         key={iframeKey}
         src={previewUrl}

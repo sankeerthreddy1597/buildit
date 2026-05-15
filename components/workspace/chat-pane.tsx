@@ -21,6 +21,8 @@ interface ChatPaneProps {
   initialMessages: UIMessage[]
   initialPlan: Plan | null
   initialWidth?: number
+  onPocHtml?: (html: string) => void
+  onStatusChange?: (status: string) => void
 }
 
 interface ModelOption {
@@ -39,6 +41,8 @@ export function ChatPane({
   initialMessages,
   initialPlan,
   initialWidth = 380,
+  onPocHtml,
+  onStatusChange,
 }: ChatPaneProps) {
   const router = useRouter()
 
@@ -59,8 +63,9 @@ export function ChatPane({
   // Horizontal resize
   const [paneWidth, setPaneWidth]   = useState(initialWidth)
   const [isDragging, setIsDragging] = useState(false)
-  const dragStartX    = useRef(0)
+  const dragStartX     = useRef(0)
   const dragStartWidth = useRef(initialWidth)
+  const lastPocToolCallId = useRef<string | null>(null)
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const pickerRef      = useRef<HTMLDivElement>(null)
@@ -123,6 +128,23 @@ export function ChatPane({
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, isLoading])
 
+  // Detect generate_poc output — push HTML and flip status to 'ready' immediately
+  useEffect(() => {
+    for (const msg of messages) {
+      if (msg.role !== 'assistant') continue
+      for (const part of msg.parts) {
+        if (!isToolUIPart(part)) continue
+        const p = part as unknown as { type: string; toolCallId: string; state: string; input: { html: string } }
+        if (p.type === 'tool-generate_poc' && p.state === 'output-available' && p.toolCallId !== lastPocToolCallId.current) {
+          lastPocToolCallId.current = p.toolCallId
+          if (p.input?.html) onPocHtml?.(p.input.html)
+          onStatusChange?.('ready')
+          return
+        }
+      }
+    }
+  }, [messages, onPocHtml, onStatusChange])
+
   const handleSubmit = () => {
     if (!input.trim() || isLoading) return
     sendMessage({ text: input })
@@ -159,7 +181,14 @@ export function ChatPane({
         body: JSON.stringify({ plan: currentPlan }),
       })
       setPlanBarOpen(false)
-      if (res.ok) router.refresh()
+      if (!res.ok) return
+      const data = await res.json()
+      onStatusChange?.('building')
+      if (data.isProofOfConcept) {
+        sendMessage({ text: 'Generate the proof of concept HTML now.' })
+      } else {
+        router.refresh()
+      }
     } finally {
       setIsBuilding(false)
     }

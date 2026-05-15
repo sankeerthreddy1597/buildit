@@ -25,6 +25,8 @@ export type Plan = {
   estimatedMinutes: number
   estimatedCredits: number
   starterKitArgs: string
+  isProofOfConcept?: boolean
+  pocHtml?: string
 }
 
 interface PlanCardProps {
@@ -139,7 +141,7 @@ export function PlanCard({ plan, onToggle, onBuild, isBuilding, locked, classNam
             </>
           ) : (
             <>
-              Build →
+              {plan.isProofOfConcept ? 'Generate' : 'Build'} →
               <kbd
                 className="inline-flex items-center justify-center"
                 style={{

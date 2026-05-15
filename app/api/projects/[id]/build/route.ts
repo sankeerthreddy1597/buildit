@@ -36,6 +36,8 @@ export async function POST(
       updatedAt: new Date(),
     })
     .where(eq(projects.id, id))
+  
+    console.log('Updated project status to building with plan:', finalPlan)
 
-  return Response.json({ ok: true })
+  return Response.json({ ok: true, isProofOfConcept: !!finalPlan.isProofOfConcept })
 }

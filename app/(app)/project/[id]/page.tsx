@@ -4,8 +4,7 @@ import type { UIMessage } from 'ai'
 import { createClient } from '@/lib/supabase/server'
 import { db } from '@/lib/db'
 import { projects, messages as messagesTable } from '@/lib/db/schema'
-import { ChatPane } from '@/components/workspace/chat-pane'
-import { PreviewPane } from '@/components/workspace/preview-pane'
+import { WorkspaceView } from '@/components/workspace/workspace-view'
 import type { Plan } from '@/components/workspace/plan-card'
 
 export default async function ProjectPage({
@@ -19,7 +18,6 @@ export default async function ProjectPage({
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect(`/login?next=/project/${id}`)
 
-  // Fetch project (ownership check via userId)
   const [project] = await db
     .select()
     .from(projects)
@@ -27,7 +25,6 @@ export default async function ProjectPage({
 
   if (!project) notFound()
 
-  // Fetch existing message history
   const dbMessages = await db
     .select()
     .from(messagesTable)
@@ -40,23 +37,20 @@ export default async function ProjectPage({
     parts: [{ type: 'text' as const, text: m.content }],
   })) as UIMessage[]
 
-  const initialPlan: Plan | null = project.plan ? (JSON.parse(project.plan) as Plan) : null
+  const initialPlan: Plan | null    = project.plan ? (JSON.parse(project.plan) as Plan) : null
+  const initialPocHtml: string | null = initialPlan?.pocHtml ?? null
 
   return (
-    <div className="flex h-full overflow-hidden">
-      <ChatPane
-        projectId={project.id}
-        projectName={project.name}
-        projectStatus={project.status}
-        initialDescription={project.description}
-        initialMessages={initialMessages}
-        initialPlan={initialPlan}
-        initialWidth={project.previewUrl ? 380 : 640}
-      />
-      <PreviewPane
-        previewUrl={project.previewUrl}
-        projectStatus={project.status}
-      />
-    </div>
+    <WorkspaceView
+      projectId={project.id}
+      projectName={project.name}
+      projectStatus={project.status}
+      initialDescription={project.description}
+      initialMessages={initialMessages}
+      initialPlan={initialPlan}
+      initialWidth={project.previewUrl || initialPocHtml ? 380 : 640}
+      previewUrl={project.previewUrl}
+      initialPocHtml={initialPocHtml}
+    />
   )
 }
