@@ -1,5 +1,8 @@
 import { streamText, convertToModelMessages, type UIMessage } from 'ai'
+import { eq, asc } from 'drizzle-orm'
 import { createClient } from '@/lib/supabase/server'
+import { db } from '@/lib/db'
+import { messages as messagesTable } from '@/lib/db/schema'
 import { getModel } from '@/lib/ai/providers'
 
 const SYSTEM_PROMPT = `You are a planning assistant for buildit, an AI app builder.
@@ -19,13 +22,58 @@ export async function POST(req: Request) {
   if (!user) return new Response('Unauthorized', { status: 401 })
 
   const body = await req.json()
-  const messages: UIMessage[] = body.messages ?? []
-  const modelId: string = body.modelId ?? 'claude-sonnet-4-6'
+  const projectId: string = body.projectId
+  const modelId: string   = body.modelId ?? 'claude-sonnet-4-6'
+  const message: string   = body.message ?? ''
 
+  if (!projectId || !message.trim()) {
+    return new Response('Bad request', { status: 400 })
+  }
+
+  // ── Load existing history from DB ──────────────────────────────────────────
+  const history = await db
+    .select()
+    .from(messagesTable)
+    .where(eq(messagesTable.projectId, projectId))
+    .orderBy(asc(messagesTable.createdAt))
+
+  // ── Save the incoming user message ─────────────────────────────────────────
+  const [savedUserMsg] = await db
+    .insert(messagesTable)
+    .values({ projectId, role: 'user', content: message, mode: 'plan' })
+    .returning({ id: messagesTable.id })
+
+  // ── Build full UIMessage array for the model ───────────────────────────────
+  const uiMessages = [
+    ...history.map(m => ({
+      id:    m.id,
+      role:  m.role as 'user' | 'assistant',
+      parts: [{ type: 'text' as const, text: m.content }],
+    })),
+    {
+      id:    savedUserMsg.id,
+      role:  'user' as const,
+      parts: [{ type: 'text' as const, text: message }],
+    },
+  ] as UIMessage[]
+
+  // ── Stream response ────────────────────────────────────────────────────────
   const result = streamText({
     model: getModel(modelId),
     system: SYSTEM_PROMPT,
-    messages: await convertToModelMessages(messages),
+    messages: await convertToModelMessages(uiMessages),
+    onFinish: async ({ text }) => {
+      try {
+        await db.insert(messagesTable).values({
+          projectId,
+          role: 'assistant',
+          content: text,
+          mode: 'plan',
+        })
+      } catch (err) {
+        console.error('[chat] failed to save assistant message:', err)
+      }
+    },
   })
 
   return result.toUIMessageStreamResponse()

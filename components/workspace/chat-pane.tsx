@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect, useMemo } from 'react'
 import Link from 'next/link'
 import { useChat } from '@ai-sdk/react'
-import { DefaultChatTransport, isTextUIPart } from 'ai'
+import { DefaultChatTransport, isTextUIPart, type UIMessage } from 'ai'
 import { PromptInput } from '@/components/shared/prompt-input'
 import { Icon } from '@/components/shared/icons'
 import { cn } from '@/lib/utils'
@@ -16,6 +16,7 @@ interface ChatPaneProps {
   projectName: string
   projectStatus: string
   initialDescription: string | null
+  initialMessages: UIMessage[]
 }
 
 interface ModelOption {
@@ -31,6 +32,7 @@ export function ChatPane({
   projectName,
   projectStatus,
   initialDescription,
+  initialMessages,
 }: ChatPaneProps) {
   const [input, setInput]           = useState('')
   const [modelId, setModelId]       = useState('claude-sonnet-4-6')
@@ -69,22 +71,30 @@ export function ChatPane({
     () =>
       new DefaultChatTransport({
         api: '/api/chat',
-        prepareSendMessagesRequest: ({ messages }) => ({
-          body: { messages, projectId, modelId: modelIdRef.current },
-        }),
+        // Send only the new user message text — server loads history from DB
+        prepareSendMessagesRequest: ({ messages: all }) => {
+          const last = all[all.length - 1]
+          const text = last ? last.parts.filter(isTextUIPart).map(p => p.text).join('') : ''
+          return { body: { projectId, modelId: modelIdRef.current, message: text } }
+        },
       }),
     [projectId],
   )
 
-  const { messages, sendMessage, status, error } = useChat({ transport })
+  const { messages, sendMessage, status, error } = useChat({
+    transport,
+    messages: initialMessages,
+  })
 
   const isLoading = status === 'streaming' || status === 'submitted'
 
-  // Auto-send the initial project description on first open
+  // Auto-send the initial description only on the very first open (no history yet)
   useEffect(() => {
-    if (initialized.current || !initialDescription) return
+    if (initialized.current) return
     initialized.current = true
-    sendMessage({ text: initialDescription })
+    if (initialMessages.length === 0 && initialDescription) {
+      sendMessage({ text: initialDescription })
+    }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Auto-scroll to bottom
