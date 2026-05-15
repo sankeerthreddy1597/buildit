@@ -6,6 +6,7 @@ import { db } from '@/lib/db'
 import { projects, messages as messagesTable } from '@/lib/db/schema'
 import { ChatPane } from '@/components/workspace/chat-pane'
 import { PreviewPane } from '@/components/workspace/preview-pane'
+import type { Plan } from '@/components/workspace/plan-card'
 
 export default async function ProjectPage({
   params,
@@ -39,6 +40,8 @@ export default async function ProjectPage({
     parts: [{ type: 'text' as const, text: m.content }],
   })) as UIMessage[]
 
+  const initialPlan: Plan | null = project.plan ? (JSON.parse(project.plan) as Plan) : null
+
   return (
     <div className="flex h-full overflow-hidden">
       <ChatPane
@@ -47,6 +50,8 @@ export default async function ProjectPage({
         projectStatus={project.status}
         initialDescription={project.description}
         initialMessages={initialMessages}
+        initialPlan={initialPlan}
+        initialWidth={project.previewUrl ? 380 : 640}
       />
       <PreviewPane
         previewUrl={project.previewUrl}

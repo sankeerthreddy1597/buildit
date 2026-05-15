@@ -32,6 +32,7 @@ interface PlanCardProps {
   onToggle: (sectionKey: PlanSection['key'], itemId: string) => void
   onBuild: () => void
   isBuilding?: boolean
+  locked?: boolean
   className?: string
 }
 
@@ -45,7 +46,7 @@ const SECTION_ICON = {
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
-export function PlanCard({ plan, onToggle, onBuild, isBuilding, className }: PlanCardProps) {
+export function PlanCard({ plan, onToggle, onBuild, isBuilding, locked, className }: PlanCardProps) {
   const totalItems  = plan.sections.reduce((n, s) => n + s.items.length, 0)
   const enabledItems = plan.sections.reduce((n, s) => n + s.items.filter(i => i.enabled).length, 0)
 
@@ -104,8 +105,11 @@ export function PlanCard({ plan, onToggle, onBuild, isBuilding, className }: Pla
         <button
           type="button"
           onClick={onBuild}
-          disabled={isBuilding}
-          className="inline-flex items-center gap-2 text-white font-medium transition-colors disabled:opacity-50"
+          disabled={isBuilding || locked}
+          className={cn(
+            'inline-flex items-center gap-2 text-white font-medium transition-colors disabled:opacity-60',
+            locked ? 'cursor-default' : 'cursor-pointer',
+          )}
           style={{
             padding: '8px 18px',
             borderRadius: 10,
@@ -113,21 +117,45 @@ export function PlanCard({ plan, onToggle, onBuild, isBuilding, className }: Pla
             fontSize: 13,
           }}
         >
-          Build →
-          <kbd
-            className="inline-flex items-center justify-center"
-            style={{
-              fontFamily: 'var(--font-mono)',
-              fontSize: 11,
-              padding: '1px 5px',
-              borderRadius: 4,
-              background: 'rgba(255,255,255,0.2)',
-              border: 'none',
-              color: '#fff',
-            }}
-          >
-            ↵
-          </kbd>
+          {locked ? (
+            <>
+              <Icon name="lock" size={12} fill="currentColor" strokeWidth={0} />
+              Locked
+            </>
+          ) : isBuilding ? (
+            <>
+              <span
+                className="animate-spin shrink-0"
+                style={{
+                  width: 13,
+                  height: 13,
+                  borderRadius: 999,
+                  border: '2px solid rgba(255,255,255,0.3)',
+                  borderTopColor: '#fff',
+                  display: 'block',
+                }}
+              />
+              Building…
+            </>
+          ) : (
+            <>
+              Build →
+              <kbd
+                className="inline-flex items-center justify-center"
+                style={{
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: 11,
+                  padding: '1px 5px',
+                  borderRadius: 4,
+                  background: 'rgba(255,255,255,0.2)',
+                  border: 'none',
+                  color: '#fff',
+                }}
+              >
+                ↵
+              </kbd>
+            </>
+          )}
         </button>
       </div>
 

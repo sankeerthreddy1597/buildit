@@ -2,10 +2,12 @@
 
 import { useState, useRef, useEffect, useMemo } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { useChat } from '@ai-sdk/react'
-import { DefaultChatTransport, isTextUIPart, type UIMessage } from 'ai'
+import { DefaultChatTransport, isTextUIPart, isToolUIPart, type UIMessage } from 'ai'
 import { PromptInput } from '@/components/shared/prompt-input'
 import { Icon } from '@/components/shared/icons'
+import { PlanCard, type Plan, type PlanSection } from '@/components/workspace/plan-card'
 import { cn } from '@/lib/utils'
 import { CLOUD_MODELS } from '@/lib/ai/providers'
 
@@ -17,6 +19,8 @@ interface ChatPaneProps {
   projectStatus: string
   initialDescription: string | null
   initialMessages: UIMessage[]
+  initialPlan: Plan | null
+  initialWidth?: number
 }
 
 interface ModelOption {
@@ -33,12 +37,30 @@ export function ChatPane({
   projectStatus,
   initialDescription,
   initialMessages,
+  initialPlan,
+  initialWidth = 380,
 }: ChatPaneProps) {
+  const router = useRouter()
+
   const [input, setInput]           = useState('')
   const [modelId, setModelId]       = useState('claude-sonnet-4-6')
   const [showPicker, setShowPicker] = useState(false)
   const [ollamaModels, setOllamaModels] = useState<string[]>([])
   const [ollamaLoading, setOllamaLoading] = useState(true)
+  const [isBuilding, setIsBuilding] = useState(false)
+
+  // Per-plan section overrides (toolCallId → overridden sections)
+  const [planOverrides, setPlanOverrides] = useState<Record<string, PlanSection[]>>({})
+
+  // Persistent plan bar (shown when plan exists but no tool invocation in current messages)
+  const [barPlan, setBarPlan]       = useState<Plan | null>(initialPlan)
+  const [planBarOpen, setPlanBarOpen] = useState(false)
+
+  // Horizontal resize
+  const [paneWidth, setPaneWidth]   = useState(initialWidth)
+  const [isDragging, setIsDragging] = useState(false)
+  const dragStartX    = useRef(0)
+  const dragStartWidth = useRef(initialWidth)
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const pickerRef      = useRef<HTMLDivElement>(null)
@@ -71,7 +93,6 @@ export function ChatPane({
     () =>
       new DefaultChatTransport({
         api: '/api/chat',
-        // Send only the new user message text — server loads history from DB
         prepareSendMessagesRequest: ({ messages: all }) => {
           const last = all[all.length - 1]
           const text = last ? last.parts.filter(isTextUIPart).map(p => p.text).join('') : ''
@@ -108,6 +129,75 @@ export function ChatPane({
     setInput('')
   }
 
+  const startDrag = (e: React.MouseEvent) => {
+    e.preventDefault()
+    dragStartX.current    = e.clientX
+    dragStartWidth.current = paneWidth
+    setIsDragging(true)
+
+    const onMouseMove = (ev: MouseEvent) => {
+      const delta    = ev.clientX - dragStartX.current
+      const newWidth = Math.max(280, Math.min(640, dragStartWidth.current + delta))
+      setPaneWidth(newWidth)
+    }
+    const onMouseUp = () => {
+      setIsDragging(false)
+      document.removeEventListener('mousemove', onMouseMove)
+      document.removeEventListener('mouseup', onMouseUp)
+    }
+    document.addEventListener('mousemove', onMouseMove)
+    document.addEventListener('mouseup', onMouseUp)
+  }
+
+  const handleBuild = async (currentPlan: Plan) => {
+    if (isBuilding) return
+    setIsBuilding(true)
+    try {
+      const res = await fetch(`/api/projects/${projectId}/build`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ plan: currentPlan }),
+      })
+      setPlanBarOpen(false)
+      if (res.ok) router.refresh()
+    } finally {
+      setIsBuilding(false)
+    }
+  }
+
+  const handleToggle = (toolCallId: string, plan: Plan, sectionKey: PlanSection['key'], itemId: string) => {
+    const base = planOverrides[toolCallId] ?? plan.sections
+    const updated = base.map(s =>
+      s.key !== sectionKey
+        ? s
+        : { ...s, items: s.items.map(item =>
+            item.id !== itemId || item.required ? item : { ...item, enabled: !item.enabled }
+          )}
+    )
+    setPlanOverrides(prev => ({ ...prev, [toolCallId]: updated }))
+  }
+
+  const handleBarToggle = (sectionKey: PlanSection['key'], itemId: string) => {
+    setBarPlan(prev => {
+      if (!prev) return prev
+      return {
+        ...prev,
+        sections: prev.sections.map(s =>
+          s.key !== sectionKey ? s : {
+            ...s,
+            items: s.items.map(item =>
+              item.id !== itemId || item.required ? item : { ...item, enabled: !item.enabled }
+            ),
+          }
+        ),
+      }
+    })
+  }
+
+  // Show the bar when a plan exists but no live tool invocation is visible in the message list
+  const hasPlanInMessages = messages.some(m => m.parts.some(p => isToolUIPart(p)))
+  const showPlanBar = !!barPlan && !hasPlanInMessages
+
   // Build the flat list of model options for the picker
   const modelOptions: ModelOption[] = [
     ...CLOUD_MODELS.map(m => ({ ...m, section: 'cloud' as const })),
@@ -122,14 +212,33 @@ export function ChatPane({
   const modelLabel    = selectedModel?.label ?? modelId
 
   return (
+    <>
+    {/* Full-screen overlay during drag — prevents iframe from stealing mouse events */}
+    {isDragging && (
+      <div style={{ position: 'fixed', inset: 0, zIndex: 9999, cursor: 'col-resize' }} />
+    )}
     <div
-      className="flex flex-col shrink-0"
+      className="flex flex-col shrink-0 relative"
       style={{
-        width: 380,
+        width: paneWidth,
         borderRight: '1px solid var(--bd)',
         background: 'var(--bg-elev)',
       }}
     >
+      {/* Drag handle */}
+      <div
+        onMouseDown={startDrag}
+        className="absolute top-0 bottom-0 z-10 group"
+        style={{ right: -3, width: 6, cursor: 'col-resize' }}
+      >
+        <div
+          className={cn(
+            'absolute inset-y-0 left-1/2 -translate-x-1/2 transition-opacity group-hover:opacity-100',
+            isDragging ? 'opacity-100' : 'opacity-0',
+          )}
+          style={{ width: 2, background: 'var(--brand)' }}
+        />
+      </div>
       {/* ── Top bar ── */}
       <div
         className="flex items-center gap-2.5 shrink-0"
@@ -177,32 +286,68 @@ export function ChatPane({
         )}
 
         {messages.map((msg) => {
-          const text = msg.parts.filter(isTextUIPart).map(p => p.text).join('')
-          if (!text) return null
           const isUser = msg.role === 'user'
-          return (
-            <div
-              key={msg.id}
-              className={cn('flex mb-3', isUser ? 'justify-end' : 'justify-start')}
-            >
-              <div
-                className={isUser ? 'text-white' : 'text-fg'}
-                style={{
-                  maxWidth: '86%',
-                  padding: '10px 13px',
-                  borderRadius: isUser ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
-                  background: isUser ? 'var(--brand)' : 'var(--bg-soft)',
-                  border: isUser ? 'none' : '1px solid var(--bd)',
-                  fontSize: 13.5,
-                  lineHeight: 1.55,
-                  whiteSpace: 'pre-wrap',
-                  wordBreak: 'break-word',
-                }}
-              >
-                {text}
-              </div>
-            </div>
-          )
+
+          // Collect parts: text bubbles + plan cards (for assistant)
+          const elements: React.ReactNode[] = []
+
+          for (const part of msg.parts) {
+            if (isTextUIPart(part) && part.text.trim()) {
+              elements.push(
+                <div
+                  key={`${msg.id}-text-${elements.length}`}
+                  className={cn('flex mb-3', isUser ? 'justify-end' : 'justify-start')}
+                >
+                  <div
+                    className={isUser ? 'text-white' : 'text-fg'}
+                    style={{
+                      maxWidth: '86%',
+                      padding: '10px 13px',
+                      borderRadius: isUser ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
+                      background: isUser ? 'var(--brand)' : 'var(--bg-soft)',
+                      border: isUser ? 'none' : '1px solid var(--bd)',
+                      fontSize: 13.5,
+                      lineHeight: 1.55,
+                      whiteSpace: 'pre-wrap',
+                      wordBreak: 'break-word',
+                    }}
+                  >
+                    {part.text}
+                  </div>
+                </div>
+              )
+            }
+
+            if (!isUser && isToolUIPart(part) && (part as { type: string }).type === 'tool-propose_plan') {
+              const invocation = part as unknown as {
+                type: 'tool-propose_plan'
+                toolCallId: string
+                state: string
+                input: Plan
+              }
+              // Only render once the input is available (not mid-stream)
+              if (invocation.state === 'input-available' || invocation.state === 'output-available') {
+                const plan = invocation.input
+                const sections = planOverrides[invocation.toolCallId] ?? plan.sections
+                elements.push(
+                  <div key={`${msg.id}-plan-${invocation.toolCallId}`} className="mb-3 mx-1">
+                    <PlanCard
+                      plan={{ ...plan, sections }}
+                      onToggle={(sectionKey, itemId) =>
+                        handleToggle(invocation.toolCallId, plan, sectionKey, itemId)
+                      }
+                      onBuild={() => handleBuild({ ...plan, sections })}
+                      isBuilding={isBuilding}
+                      locked={projectStatus !== 'planning'}
+                    />
+                  </div>
+                )
+              }
+            }
+          }
+
+          if (elements.length === 0) return null
+          return <div key={msg.id}>{elements}</div>
         })}
 
         {/* Typing indicator */}
@@ -243,6 +388,48 @@ export function ChatPane({
 
         <div ref={messagesEndRef} />
       </div>
+
+      {/* ── Persistent plan bar ── */}
+      {showPlanBar && barPlan && (
+        <div className="shrink-0" style={{ borderTop: '1px solid var(--bd)' }}>
+          {planBarOpen && (
+            <div style={{ padding: '10px 10px 0' }}>
+              <PlanCard
+                plan={barPlan}
+                onToggle={handleBarToggle}
+                onBuild={() => handleBuild(barPlan)}
+                isBuilding={isBuilding}
+                locked={projectStatus !== 'planning'}
+              />
+            </div>
+          )}
+          <button
+            type="button"
+            onClick={() => setPlanBarOpen(p => !p)}
+            className="w-full flex items-center gap-2 cursor-pointer transition-colors hover:bg-bg-soft"
+            style={{ padding: '9px 16px' }}
+          >
+            {projectStatus === 'planning' ? (
+              <span
+                className="pulse-dot shrink-0"
+                style={{ width: 7, height: 7, borderRadius: 999, background: 'var(--brand)' }}
+              />
+            ) : (
+              <Icon name="lock" size={12} className="text-fg-muted shrink-0" />
+            )}
+            <span className="text-fg" style={{ fontSize: 13 }}>
+              {projectStatus === 'planning' ? 'Plan ready' : 'Plan locked'}
+              {' · '}
+              <span className="text-fg-muted">{barPlan.appName}</span>
+            </span>
+            <Icon
+              name={planBarOpen ? 'chevUp' : 'chevDown'}
+              size={13}
+              className="ml-auto text-fg-muted"
+            />
+          </button>
+        </div>
+      )}
 
       {/* ── Input area ── */}
       <div className="relative" style={{ padding: '10px', borderTop: '1px solid var(--bd)' }}>
@@ -377,6 +564,7 @@ export function ChatPane({
         />
       </div>
     </div>
+    </>
   )
 }
 
