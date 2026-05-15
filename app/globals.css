@@ -1,26 +1,208 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+@custom-variant dark (&:is(.dark *));
 
+/* ── Design token bridge: buildit → shadcn ── */
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  /* shadcn surface tokens */
+  --color-background:           var(--background);
+  --color-foreground:           var(--foreground);
+  --color-card:                 var(--card);
+  --color-card-foreground:      var(--card-foreground);
+  --color-popover:              var(--popover);
+  --color-popover-foreground:   var(--popover-foreground);
+  --color-primary:              var(--primary);
+  --color-primary-foreground:   var(--primary-foreground);
+  --color-secondary:            var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted:                var(--muted);
+  --color-muted-foreground:     var(--muted-foreground);
+  --color-accent:               var(--accent);
+  --color-accent-foreground:    var(--accent-foreground);
+  --color-destructive:          var(--destructive);
+  --color-border:               var(--border);
+  --color-input:                var(--input);
+  --color-ring:                 var(--ring);
+
+  /* buildit semantic tokens (available as Tailwind utilities) */
+  --color-bg:           var(--bg);
+  --color-bg-elev:      var(--bg-elev);
+  --color-bg-soft:      var(--bg-soft);
+  --color-fg:           var(--fg);
+  --color-fg-dim:       var(--fg-dim);
+  --color-fg-muted:     var(--fg-muted);
+  --color-fg-faint:     var(--fg-faint);
+  --color-bd:           var(--bd);
+  --color-bd-strong:    var(--bd-strong);
+  --color-brand:        var(--brand);
+  --color-brand-hover:  var(--brand-hover);
+  --color-brand-soft:   var(--brand-soft);
+  --color-brand-faint:  var(--brand-faint);
+  --color-ok:           var(--ok);
+  --color-warn:         var(--warn);
+  --color-danger:       var(--danger);
+
+  /* sidebar (shadcn sidebar component) */
+  --color-sidebar:                    var(--bg-elev);
+  --color-sidebar-foreground:         var(--fg);
+  --color-sidebar-primary:            var(--brand);
+  --color-sidebar-primary-foreground: #fff;
+  --color-sidebar-accent:             var(--bg-soft);
+  --color-sidebar-accent-foreground:  var(--fg-dim);
+  --color-sidebar-border:             var(--bd);
+  --color-sidebar-ring:               var(--brand);
+
+  /* typography */
+  --font-sans:  ui-sans-serif, system-ui, -apple-system, "SF Pro Display", "Segoe UI", sans-serif;
+  --font-serif: var(--font-instrument-serif), "Times New Roman", serif;
+  --font-mono:  var(--font-jetbrains-mono), ui-monospace, "SF Mono", Menlo, monospace;
+  --font-hand:  "Caveat", "Comic Sans MS", cursive;
+  --font-geist-mono: var(--font-mono);
+
+  /* radius scale (px → rem) */
+  --radius:     0.875rem; /* 14px — card base */
+  --radius-sm:  0.25rem;  /* 4px */
+  --radius-md:  0.5rem;   /* 8px */
+  --radius-lg:  var(--radius);
+  --radius-xl:  1.125rem; /* 18px */
+  --radius-btn: 0.625rem; /* 10px */
+  --radius-input: 0.75rem; /* 12px */
+  --radius-pill: 999px;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+/* ── Light theme ── */
+:root {
+  /* buildit primitives */
+  --bg:           #f7f3ec;
+  --bg-elev:      #ffffff;
+  --bg-soft:      #efe9de;
+  --fg:           #1a1612;
+  --fg-dim:       #4a4137;
+  --fg-muted:     #8a7e6c;
+  --fg-faint:     #b4a896;
+  --bd:           #e2d8c4;
+  --bd-strong:    #c9bca2;
+  --brand:        #c45a26;
+  --brand-hover:  #b04d1e;
+  --brand-soft:   #f5e6cf;
+  --brand-faint:  #fbf3e7;
+  --ok:           #5a8a4a;
+  --warn:         #c98b1e;
+  --danger:       #b03830;
+
+  /* shadows */
+  --shadow-sm: 0 1px 2px rgba(60,40,20,.06), 0 0 0 1px rgba(60,40,20,.04);
+  --shadow-md: 0 4px 16px rgba(60,40,20,.08), 0 0 0 1px rgba(60,40,20,.06);
+  --shadow-lg: 0 12px 40px rgba(60,40,20,.12), 0 0 0 1px rgba(60,40,20,.06);
+
+  /* shadcn token aliases */
+  --background:            var(--bg);
+  --foreground:            var(--fg);
+  --card:                  var(--bg-elev);
+  --card-foreground:       var(--fg);
+  --popover:               var(--bg-elev);
+  --popover-foreground:    var(--fg);
+  --primary:               var(--brand);
+  --primary-foreground:    #ffffff;
+  --secondary:             var(--bg-soft);
+  --secondary-foreground:  var(--fg-dim);
+  --muted:                 var(--bg-soft);
+  --muted-foreground:      var(--fg-muted);
+  --accent:                var(--brand-faint);
+  --accent-foreground:     var(--fg-dim);
+  --destructive:           var(--danger);
+  --border:                var(--bd);
+  --input:                 var(--bd);
+  --ring:                  var(--brand);
+}
+
+/* ── Dark theme ── */
+.dark {
+  --bg:           #14110d;
+  --bg-elev:      #1d1914;
+  --bg-soft:      #1a1612;
+  --fg:           #f0e8da;
+  --fg-dim:       #c8bea8;
+  --fg-muted:     #8a7e6c;
+  --fg-faint:     #5a5043;
+  --bd:           #2a241d;
+  --bd-strong:    #3a3229;
+  --brand:        #e07845;
+  --brand-hover:  #ec8855;
+  --brand-soft:   #2f231a;
+  --brand-faint:  #221a13;
+  --ok:           #82b06d;
+  --warn:         #c98b1e;
+  --danger:       #d94c43;
+
+  --shadow-sm: 0 1px 2px rgba(0,0,0,.4), 0 0 0 1px rgba(255,235,200,.04);
+  --shadow-md: 0 4px 16px rgba(0,0,0,.4), 0 0 0 1px rgba(255,235,200,.06);
+  --shadow-lg: 0 12px 40px rgba(0,0,0,.5), 0 0 0 1px rgba(255,235,200,.06);
+
+  --background:            var(--bg);
+  --foreground:            var(--fg);
+  --card:                  var(--bg-elev);
+  --card-foreground:       var(--fg);
+  --popover:               var(--bg-elev);
+  --popover-foreground:    var(--fg);
+  --primary:               var(--brand);
+  --primary-foreground:    #ffffff;
+  --secondary:             var(--bg-soft);
+  --secondary-foreground:  var(--fg-dim);
+  --muted:                 var(--bg-soft);
+  --muted-foreground:      var(--fg-muted);
+  --accent:                var(--brand-faint);
+  --accent-foreground:     var(--fg-dim);
+  --destructive:           var(--danger);
+  --border:                var(--bd);
+  --input:                 var(--bd);
+  --ring:                  var(--brand);
+}
+
+/* ── Base layer ── */
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    font-feature-settings: "cv11", "ss01";
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* ── Animations ── */
+@keyframes pulse-dot {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50%       { transform: scale(1.4); opacity: 0.6; }
 }
+@keyframes spin-ring {
+  to { transform: rotate(360deg); }
+}
+@keyframes shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position:  200% 0; }
+}
+@keyframes blink {
+  0%, 80%, 100% { opacity: 0.2; }
+  40%            { opacity: 1; }
+}
+
+/* ── Utility classes ── */
+.pulse-dot  { animation: pulse-dot 1.6s ease-in-out infinite; }
+.spin-ring  { animation: spin-ring 0.8s linear infinite; }
+.shimmer {
+  background: linear-gradient(90deg, var(--bg-soft) 0%, var(--bg-elev) 50%, var(--bg-soft) 100%);
+  background-size: 200% 100%;
+  animation: shimmer 2s infinite;
+}
+.typing-dot                  { animation: blink 1.4s infinite both; }
+.typing-dot:nth-child(2)     { animation-delay: .2s; }
+.typing-dot:nth-child(3)     { animation-delay: .4s; }
+
+.shadow-sm { box-shadow: var(--shadow-sm); }
+.shadow-md { box-shadow: var(--shadow-md); }
+.shadow-lg { box-shadow: var(--shadow-lg); }
