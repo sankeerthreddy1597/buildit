@@ -127,7 +127,7 @@ export function PromptInput({
             type="button"
             onClick={() => { if (value.trim() && !disabled) onSubmit() }}
             disabled={disabled || !value.trim()}
-            className="inline-flex items-center justify-center text-white transition-colors disabled:opacity-40"
+            className="inline-flex items-center justify-center text-white transition-colors cursor-pointer disabled:pointer-events-none disabled:opacity-40"
             style={{
               width: 36,
               height: 36,
